@@ -1,0 +1,111 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta http-equiv="Content-Style-Type" content="text/css">
+  <title></title>
+  <meta name="Generator" content="Cocoa HTML Writer">
+  <meta name="CocoaVersion" content="2566">
+  <style type="text/css">
+    p.p1 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica}
+    p.p2 {margin: 0.0px 0.0px 0.0px 0.0px; font: 12.0px Helvetica; min-height: 14.0px}
+  </style>
+</head>
+<body>
+<p class="p1">&lt;!DOCTYPE html&gt;</p>
+<p class="p1">&lt;html lang="en"&gt;</p>
+<p class="p1">&lt;head&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta charset="UTF-8" /&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;meta name="viewport" content="width=device-width, initial-scale=1.0"/&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;title&gt;Image Resizer 512x512&lt;/title&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;style&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>body {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-family: sans-serif;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>text-align: center;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 40px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>background: #fff;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>h1 {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>color: #1a237e;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>#canvasPreview {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin-top: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>display: grid;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));</p>
+<p class="p1"><span class="Apple-converted-space">      </span>gap: 20px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>canvas {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>border: 1px solid #ccc;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">    </span>button {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>margin: 20px 10px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>padding: 10px 20px;</p>
+<p class="p1"><span class="Apple-converted-space">      </span>font-size: 16px;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>}</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/style&gt;</p>
+<p class="p1">&lt;/head&gt;</p>
+<p class="p1">&lt;body&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;h1&gt;Image Resizer 512x512&lt;/h1&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;input type="file" id="upload" multiple accept="image/*"&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;br/&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;button id="downloadAll" disabled&gt;Download All&lt;/button&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;div id="canvasPreview"&gt;&lt;/div&gt;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"&gt;&lt;/script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;script&gt;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const upload = document.getElementById("upload");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const canvasPreview = document.getElementById("canvasPreview");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const downloadAll = document.getElementById("downloadAll");</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const TARGET_SIZE = 512;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const MARGIN_RATIO = 0.08;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const MARGIN_PX = TARGET_SIZE * MARGIN_RATIO;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const CONTENT_SIZE = TARGET_SIZE - 2 * MARGIN_PX;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>const zip = new JSZip();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>upload.addEventListener("change", async (e) =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const files = Array.from(e.target.files);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>canvasPreview.innerHTML = "";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>zip.files = {}; // reset ZIP</p>
+<p class="p1"><span class="Apple-converted-space">      </span>downloadAll.disabled = true;</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>for (const file of files) {</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const img = new Image();</p>
+<p class="p1"><span class="Apple-converted-space">        </span>img.src = URL.createObjectURL(file);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>await img.decode();</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const canvas = document.createElement("canvas");</p>
+<p class="p1"><span class="Apple-converted-space">        </span>canvas.width = canvas.height = TARGET_SIZE;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const ctx = canvas.getContext("2d");</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>// White background</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillStyle = "#ffffff";</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const scale = Math.min(CONTENT_SIZE / img.width, CONTENT_SIZE / img.height);</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const newWidth = img.width * scale;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const newHeight = img.height * scale;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const x = (TARGET_SIZE - newWidth) / 2;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>const y = (TARGET_SIZE - newHeight) / 2;</p>
+<p class="p1"><span class="Apple-converted-space">        </span>ctx.drawImage(img, x, y, newWidth, newHeight);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>canvasPreview.appendChild(canvas);</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">        </span>const blob = await new Promise((resolve) =&gt; canvas.toBlob(resolve, "image/jpeg", 0.95));</p>
+<p class="p1"><span class="Apple-converted-space">        </span>zip.file(file.name.replace(/\.[^/.]+$/, "") + ".jpg", blob);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>}</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">      </span>downloadAll.disabled = false;</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p2"><br></p>
+<p class="p1"><span class="Apple-converted-space">    </span>downloadAll.addEventListener("click", async () =&gt; {</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const content = await zip.generateAsync({ type: "blob" });</p>
+<p class="p1"><span class="Apple-converted-space">      </span>const a = document.createElement("a");</p>
+<p class="p1"><span class="Apple-converted-space">      </span>a.href = URL.createObjectURL(content);</p>
+<p class="p1"><span class="Apple-converted-space">      </span>a.download = "resized-images.zip";</p>
+<p class="p1"><span class="Apple-converted-space">      </span>a.click();</p>
+<p class="p1"><span class="Apple-converted-space">    </span>});</p>
+<p class="p1"><span class="Apple-converted-space">  </span>&lt;/script&gt;</p>
+<p class="p1">&lt;/body&gt;</p>
+<p class="p1">&lt;/html&gt;</p>
+</body>
+</html>
