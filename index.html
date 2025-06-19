@@ -3,16 +3,39 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Image Resizer 512x512</title>
+  <title>MAPL Image Resizer - STACK</title>
   <style>
     body {
       font-family: sans-serif;
       text-align: center;
       padding: 40px;
-      background: #fff;
+      background: #ffffff;
     }
     h1 {
       color: #1a237e;
+      margin-top: 20px;
+    }
+    #branding {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
+    #branding img {
+      height: 60px;
+    }
+    #drop-area {
+      border: 2px dashed #999;
+      padding: 40px;
+      margin: 20px auto;
+      width: 80%;
+      border-radius: 10px;
+      background: #fafafa;
+      color: #555;
+    }
+    #drop-area.hover {
+      border-color: #1a237e;
+      background-color: #f0f8ff;
     }
     #canvasPreview {
       margin-top: 20px;
@@ -31,14 +54,24 @@
   </style>
 </head>
 <body>
-  <h1>Image Resizer 512x512</h1>
-  <input type="file" id="upload" multiple accept="image/*">
-  <br/>
+  <div id="branding">
+    <img src="Logo_STACK Modular_Short_Black.png" alt="STACK Logo" />
+    <img src="maplvector.png" alt="MAPL Logo" />
+  </div>
+  <h1>MAPL Image Resizer</h1>
+  <p>Drag and drop images below, or click to select.</p>
+
+  <div id="drop-area">
+    <input type="file" id="upload" multiple accept="image/*" style="display: none;">
+    <p>Drop images here or click to upload</p>
+  </div>
+
   <button id="downloadAll" disabled>Download All</button>
   <div id="canvasPreview"></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
   <script>
+    const dropArea = document.getElementById("drop-area");
     const upload = document.getElementById("upload");
     const canvasPreview = document.getElementById("canvasPreview");
     const downloadAll = document.getElementById("downloadAll");
@@ -48,13 +81,39 @@
     const CONTENT_SIZE = TARGET_SIZE - 2 * MARGIN_PX;
     const zip = new JSZip();
 
-    upload.addEventListener("change", async (e) => {
-      const files = Array.from(e.target.files);
+    dropArea.addEventListener("click", () => upload.click());
+
+    ["dragenter", "dragover"].forEach(eventName => {
+      dropArea.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropArea.classList.add("hover");
+      });
+    });
+
+    ["dragleave", "drop"].forEach(eventName => {
+      dropArea.addEventListener(eventName, e => {
+        e.preventDefault();
+        e.stopPropagation();
+        dropArea.classList.remove("hover");
+      });
+    });
+
+    dropArea.addEventListener("drop", e => {
+      handleFiles(e.dataTransfer.files);
+    });
+
+    upload.addEventListener("change", e => {
+      handleFiles(e.target.files);
+    });
+
+    async function handleFiles(files) {
+      const fileList = Array.from(files);
       canvasPreview.innerHTML = "";
-      zip.files = {}; // reset ZIP
+      zip.files = {};
       downloadAll.disabled = true;
 
-      for (const file of files) {
+      for (const file of fileList) {
         const img = new Image();
         img.src = URL.createObjectURL(file);
         await img.decode();
@@ -63,7 +122,6 @@
         canvas.width = canvas.height = TARGET_SIZE;
         const ctx = canvas.getContext("2d");
 
-        // White background
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, TARGET_SIZE, TARGET_SIZE);
 
@@ -76,12 +134,12 @@
 
         canvasPreview.appendChild(canvas);
 
-        const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.95));
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", 0.95));
         zip.file(file.name.replace(/\.[^/.]+$/, "") + ".jpg", blob);
       }
 
       downloadAll.disabled = false;
-    });
+    }
 
     downloadAll.addEventListener("click", async () => {
       const content = await zip.generateAsync({ type: "blob" });
